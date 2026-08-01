@@ -17,6 +17,7 @@ artifacts/
 # --- Local env ---
 *.local
 frontend/.env
+.env.production
 
 # --- IDE / OS ---
 .idea/

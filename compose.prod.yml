@@ -1,0 +1,189 @@
+name: onestop-prod
+
+x-service-common: &service-common
+  restart: unless-stopped
+  environment: &service-environment
+    DB_HOST: postgres
+    DB_USERNAME: onestop
+    DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}
+    JAVA_TOOL_OPTIONS: -Xms64m -Xmx384m
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: onestop
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infrastructure/database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U onestop"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  kafka:
+    image: apache/kafka-native:3.9.0
+    restart: unless-stopped
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_HEAP_OPTS: -Xms256m -Xmx512m
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+
+  identity-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: infrastructure/docker/service.Dockerfile
+      args:
+        SERVICE: identity-service
+    environment:
+      <<: *service-environment
+      SERVER_PORT: 8081
+      DB_NAME: identity_db
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  catalog-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: infrastructure/docker/service.Dockerfile
+      args:
+        SERVICE: catalog-service
+    environment:
+      <<: *service-environment
+      SERVER_PORT: 8082
+      DB_NAME: catalog_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  cart-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: infrastructure/docker/service.Dockerfile
+      args:
+        SERVICE: cart-service
+    environment:
+      <<: *service-environment
+      SERVER_PORT: 8083
+      DB_NAME: cart_db
+      CATALOG_BASE_URL: http://catalog-service:8082
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      catalog-service:
+        condition: service_started
+
+  inventory-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: infrastructure/docker/service.Dockerfile
+      args:
+        SERVICE: inventory-service
+    environment:
+      <<: *service-environment
+      SERVER_PORT: 8084
+      DB_NAME: inventory_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  order-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: infrastructure/docker/service.Dockerfile
+      args:
+        SERVICE: order-service
+    environment:
+      <<: *service-environment
+      SERVER_PORT: 8085
+      DB_NAME: order_db
+      CART_BASE_URL: http://cart-service:8083
+      CATALOG_BASE_URL: http://catalog-service:8082
+      INVENTORY_BASE_URL: http://inventory-service:8084
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.production}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+
+  notification-service:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: infrastructure/docker/service.Dockerfile
+      args:
+        SERVICE: notification-service
+    environment:
+      <<: *service-environment
+      SERVER_PORT: 8086
+      DB_NAME: notification_db
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+
+  api-gateway:
+    <<: *service-common
+    build:
+      context: .
+      dockerfile: infrastructure/docker/service.Dockerfile
+      args:
+        SERVICE: api-gateway
+    environment:
+      SERVER_PORT: 8080
+      JAVA_TOOL_OPTIONS: -Xms64m -Xmx256m
+      IDENTITY_URI: http://identity-service:8081
+      CATALOG_URI: http://catalog-service:8082
+      CART_URI: http://cart-service:8083
+      ORDER_URI: http://order-service:8085
+      INVENTORY_URI: http://inventory-service:8084
+      CORS_ALLOWED_ORIGINS: http://98.94.85.197
+    depends_on:
+      - identity-service
+      - catalog-service
+      - cart-service
+      - inventory-service
+      - order-service
+
+  frontend:
+    build:
+      context: frontend
+      args:
+        VITE_API_BASE_URL: /api
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - api-gateway
+
+volumes:
+  postgres-data:
+  kafka-data:
