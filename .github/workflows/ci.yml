@@ -89,16 +89,32 @@ jobs:
       - name: Start backend stack
         run: docker compose up --build --detach
 
-      - name: Wait for the gateway
+      - name: Wait for every service
         run: |
-          for attempt in {1..60}; do
-            if curl --fail --silent http://127.0.0.1:8080/actuator/health >/dev/null; then
-              exit 0
+          urls=(
+            http://127.0.0.1:8080/actuator/health
+            http://127.0.0.1:8081/actuator/health
+            http://127.0.0.1:8082/actuator/health
+            http://127.0.0.1:8083/actuator/health
+            http://127.0.0.1:8084/actuator/health
+            http://127.0.0.1:8085/actuator/health
+            http://127.0.0.1:8086/actuator/health
+          )
+          for url in "${urls[@]}"; do
+            ready=false
+            for attempt in {1..60}; do
+              if curl --fail --silent "$url" >/dev/null; then
+                ready=true
+                break
+              fi
+              sleep 2
+            done
+            if [[ "$ready" != true ]]; then
+              echo "Service did not become ready: $url"
+              docker compose ps
+              exit 1
             fi
-            sleep 5
           done
-          docker compose ps
-          exit 1
 
       - name: Run customer journey
         working-directory: frontend
