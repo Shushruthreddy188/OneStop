@@ -11,13 +11,18 @@ import '../pages/AuthForm.css';
 
 type FormValues = Omit<CheckoutRequest, 'idempotencyKey'>;
 
+function createIdempotencyKey() {
+  return globalThis.crypto.randomUUID?.()
+    ?? `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+}
+
 export default function CheckoutPage() {
   const { data: cart } = useCart();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   // One idempotency key per checkout attempt: safe to retry without double-ordering.
-  const [idempotencyKey] = useState(() => crypto.randomUUID());
+  const [idempotencyKey] = useState(createIdempotencyKey);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
     defaultValues: { country: 'India', paymentMethod: 'COD' },
