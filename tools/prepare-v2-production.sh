@@ -16,6 +16,11 @@ done
 # Start Address Service once so Flyway creates its schema, then copy legacy MVP
 # addresses without changing or deleting the Identity Service source rows.
 "${COMPOSE[@]}" up -d address-service
+until "${COMPOSE[@]}" exec -T postgres psql -U onestop -d address_db -tAc \
+  "SELECT to_regclass('public.address')" | grep -qx address; do
+  echo "Waiting for Address Service schema migration..."
+  sleep 2
+done
 "${COMPOSE[@]}" exec -T postgres psql -U onestop -d identity_db -c \
   "COPY (SELECT id,user_id,NULL::text,NULL::text,NULL::text,line1,line2,city,state,postal_code,country,is_default FROM address ORDER BY id) TO STDOUT WITH CSV" |
 "${COMPOSE[@]}" exec -T postgres psql -U onestop -d address_db -c \
