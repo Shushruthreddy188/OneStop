@@ -19,11 +19,15 @@ spring:
     enabled: true
     baseline-on-migrate: true
 
+onestop:
+  security:
+    internal-token: ${INTERNAL_API_TOKEN:dev-internal-token-change-me}
+
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus,metrics
   endpoint:
     health:
       probes:

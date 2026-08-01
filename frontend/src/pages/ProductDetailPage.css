@@ -2,6 +2,21 @@
   max-width: 720px;
 }
 
+.back-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--primary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+  background: none;
+}
+
 .detail-card {
   padding: 1.5rem;
   margin-bottom: 1rem;
@@ -17,7 +32,14 @@
 
 .detail-actions {
   margin-top: 1rem;
-  max-width: 280px;
+  max-width: 320px;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.detail-actions .add-to-cart {
+  flex: 1;
 }
 
 .stock-pill {

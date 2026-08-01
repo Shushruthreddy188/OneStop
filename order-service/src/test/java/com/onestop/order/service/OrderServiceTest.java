@@ -2,7 +2,10 @@ package com.onestop.order.service;
 
 import com.onestop.order.client.CartClient;
 import com.onestop.order.client.CatalogClient;
+import com.onestop.order.client.CouponClient;
 import com.onestop.order.client.InventoryClient;
+import com.onestop.order.client.PaymentClient;
+import com.onestop.order.client.PaymentClient.PaymentResult;
 import com.onestop.order.client.dto.ClientDtos.CartLine;
 import com.onestop.order.client.dto.ClientDtos.CartView;
 import com.onestop.order.client.dto.ClientDtos.CatalogProduct;
@@ -40,6 +43,8 @@ class OrderServiceTest {
     @Mock CartClient cartClient;
     @Mock CatalogClient catalogClient;
     @Mock InventoryClient inventoryClient;
+    @Mock CouponClient couponClient;
+    @Mock PaymentClient paymentClient;
     @Mock OrderStateStore stateStore;
 
     private OrderService service;
@@ -47,7 +52,7 @@ class OrderServiceTest {
     @BeforeEach
     void setUp() {
         service = new OrderService(orders, addresses, cartClient, catalogClient,
-                inventoryClient, stateStore);
+                inventoryClient, couponClient, paymentClient, stateStore);
     }
 
     @Test
@@ -68,6 +73,8 @@ class OrderServiceTest {
             return order;
         });
         when(inventoryClient.reserve(eq(99L), any())).thenReturn(new ReservationResult(55L, "PENDING"));
+        when(paymentClient.charge(eq(99L), eq(7L), any(), any(), any()))
+                .thenReturn(new PaymentResult(true, "PENDING", "cod-99", "ok"));
 
         var result = service.placeOrder(user, request);
 
@@ -138,6 +145,6 @@ class OrderServiceTest {
 
     private static CheckoutRequest checkout(String idempotencyKey) {
         return new CheckoutRequest("Customer", "555-0100", "1 Main St", null,
-                "Chicago", "IL", "60601", "US", "COD", idempotencyKey);
+                "Chicago", "IL", "60601", "US", "COD", null, idempotencyKey);
     }
 }

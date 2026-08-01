@@ -1,13 +1,8 @@
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
-import {
-  addAddress,
-  listAddresses,
-  updateProfile,
-  type AddressPayload,
-  type UpdateProfilePayload,
-} from '../api/auth';
+import { updateProfile, type UpdateProfilePayload } from '../api/auth';
+import { createAddress, listAddresses, type AddressPayload } from '../api/addresses';
 import { useAuth } from '../auth/AuthContext';
 import { apiErrorMessage } from '../lib/apiError';
 import './AuthForm.css';
@@ -40,7 +35,7 @@ export default function ProfilePage() {
   });
 
   const addressMutation = useMutation({
-    mutationFn: addAddress,
+    mutationFn: createAddress,
     onSuccess: () => {
       addressForm.reset({ country: 'India', isDefault: false });
       queryClient.invalidateQueries({ queryKey: ['addresses'] });

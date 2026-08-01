@@ -36,6 +36,14 @@
         <module>inventory-service</module>
         <module>order-service</module>
         <module>notification-service</module>
+        <module>search-service</module>
+        <module>review-service</module>
+        <module>wishlist-service</module>
+        <module>coupon-service</module>
+        <module>payment-service</module>
+        <module>delivery-service</module>
+        <module>address-service</module>
+        <module>admin-service</module>
     </modules>
 
     <properties>
@@ -77,6 +85,26 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <!--
+      Observability (Sprint 6), inherited by every module: Prometheus metrics
+      via Micrometer, plus distributed tracing bridged to Zipkin. Versions are
+      managed by the Spring Boot BOM. Applied on the next rebuild of each service.
+    -->
+    <dependencies>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-tracing-bridge-brave</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.zipkin.reporter2</groupId>
+            <artifactId>zipkin-reporter-brave</artifactId>
+        </dependency>
+    </dependencies>
 
     <!--
       No <build> plugins here. The aggregator has packaging=pom, so the

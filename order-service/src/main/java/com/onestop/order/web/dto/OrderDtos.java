@@ -20,6 +20,7 @@ public final class OrderDtos {
             String postalCode,
             @NotBlank String country,
             String paymentMethod,
+            String couponCode,
             String idempotencyKey) {
     }
 
@@ -50,6 +51,8 @@ public final class OrderDtos {
             BigDecimal subtotal,
             BigDecimal tax,
             BigDecimal deliveryFee,
+            BigDecimal discount,
+            String couponCode,
             BigDecimal total,
             String paymentMethod,
             List<OrderItemDto> items,

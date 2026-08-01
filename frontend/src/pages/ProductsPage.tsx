@@ -1,18 +1,37 @@
 import { useState, type FormEvent } from 'react';
-import { Link } from 'react-router';
+import { Link, useSearchParams } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { fetchCategories, fetchProducts } from '../api/catalog';
 import { formatMoney } from '../lib/format';
 import AddToCartButton from '../cart/AddToCartButton';
+import WishlistButton from '../wishlist/WishlistButton';
+import SearchBox from '../components/SearchBox';
 import './ProductsPage.css';
 
 const PAGE_SIZE = 20;
 
 export default function ProductsPage() {
-  const [page, setPage] = useState(0);
-  const [category, setCategory] = useState<number | null>(null);
-  const [searchInput, setSearchInput] = useState('');
-  const [q, setQ] = useState('');
+  // Filter/pagination state lives in the URL so it survives navigation:
+  // going into a product and pressing Back restores the exact page + filters.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Math.max(0, Number(searchParams.get('page') ?? '0') || 0);
+  const category = searchParams.get('category') ? Number(searchParams.get('category')) : null;
+  const q = searchParams.get('q') ?? '';
+  const [searchInput, setSearchInput] = useState(q);
+
+  function updateParams(next: { page?: number | null; category?: number | null; q?: string | null }) {
+    const params = new URLSearchParams(searchParams);
+    for (const [key, value] of Object.entries(next)) {
+      if (value === null || value === undefined || value === '' || value === 0) {
+        params.delete(key);
+      } else {
+        params.set(key, String(value));
+      }
+    }
+    // replace: filter tweaks shouldn't each add a history entry; the product
+    // click (a push) is what Back returns from — to this restored URL.
+    setSearchParams(params, { replace: true });
+  }
 
   const categoriesQuery = useQuery({
     queryKey: ['categories'],
@@ -28,8 +47,7 @@ export default function ProductsPage() {
 
   function submitSearch(e: FormEvent) {
     e.preventDefault();
-    setPage(0);
-    setQ(searchInput);
+    updateParams({ q: searchInput, page: null });
   }
 
   const data = productsQuery.data;
@@ -45,19 +63,13 @@ export default function ProductsPage() {
         )}
       </div>
 
-      <form className="products-filters" onSubmit={submitSearch}>
-        <input
-          type="search"
-          placeholder="Search products…"
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-        />
+      <div className="products-filters">
+        <SearchBox value={searchInput} onChange={setSearchInput} onSubmit={submitSearch} />
         <select
           value={category ?? ''}
-          onChange={(e) => {
-            setPage(0);
-            setCategory(e.target.value ? Number(e.target.value) : null);
-          }}
+          onChange={(e) =>
+            updateParams({ category: e.target.value ? Number(e.target.value) : null, page: null })
+          }
         >
           <option value="">All categories</option>
           {categoriesQuery.data?.map((c) => (
@@ -66,8 +78,8 @@ export default function ProductsPage() {
             </option>
           ))}
         </select>
-        <button type="submit">Search</button>
-      </form>
+        <button type="button" onClick={() => updateParams({ q: searchInput, page: null })}>Search</button>
+      </div>
 
       {productsQuery.isLoading && <p>Loading…</p>}
       {productsQuery.isError && (
@@ -107,7 +119,10 @@ export default function ProductsPage() {
                     {discounted && <span className="mrp">{formatMoney(p.mrp)}</span>}
                     {savePct > 0 && <span className="save-badge">{savePct}% off</span>}
                   </div>
-                  <AddToCartButton productId={p.id} />
+                  <div className="card-actions">
+                    <AddToCartButton productId={p.id} />
+                    <WishlistButton productId={p.id} />
+                  </div>
                 </li>
               );
             })}
@@ -117,7 +132,7 @@ export default function ProductsPage() {
             <button
               type="button"
               disabled={page === 0 || productsQuery.isFetching}
-              onClick={() => setPage((n) => Math.max(0, n - 1))}
+              onClick={() => updateParams({ page: page - 1 })}
             >
               ‹ Prev
             </button>
@@ -128,7 +143,7 @@ export default function ProductsPage() {
             <button
               type="button"
               disabled={data.last || productsQuery.isFetching}
-              onClick={() => setPage((n) => n + 1)}
+              onClick={() => updateParams({ page: page + 1 })}
             >
               Next ›
             </button>

@@ -2,8 +2,12 @@ package com.onestop.order.service;
 
 import com.onestop.order.client.CartClient;
 import com.onestop.order.client.CatalogClient;
+import com.onestop.order.client.CouponClient;
+import com.onestop.order.client.CouponClient.CouponValidation;
 import com.onestop.order.client.InventoryClient;
 import com.onestop.order.client.InventoryInsufficientStockException;
+import com.onestop.order.client.PaymentClient;
+import com.onestop.order.client.PaymentClient.PaymentResult;
 import com.onestop.order.client.dto.ClientDtos.CartLine;
 import com.onestop.order.client.dto.ClientDtos.CartView;
 import com.onestop.order.client.dto.ClientDtos.CatalogProduct;
@@ -15,8 +19,10 @@ import com.onestop.order.domain.OrderItem;
 import com.onestop.order.error.ApiExceptions.DependencyException;
 import com.onestop.order.error.ApiExceptions.EmptyCartException;
 import com.onestop.order.error.ApiExceptions.InsufficientStockException;
+import com.onestop.order.error.ApiExceptions.InvalidCouponException;
 import com.onestop.order.error.ApiExceptions.NotFoundException;
 import com.onestop.order.error.ApiExceptions.OrderStateException;
+import com.onestop.order.error.ApiExceptions.PaymentFailedException;
 import com.onestop.order.repo.OrderAddressRepository;
 import com.onestop.order.repo.OrderRepository;
 import com.onestop.order.security.AuthenticatedUser;
@@ -47,16 +53,21 @@ public class OrderService {
     private final CartClient cartClient;
     private final CatalogClient catalogClient;
     private final InventoryClient inventoryClient;
+    private final CouponClient couponClient;
+    private final PaymentClient paymentClient;
     private final OrderStateStore stateStore;
 
     public OrderService(OrderRepository orders, OrderAddressRepository addresses,
                         CartClient cartClient, CatalogClient catalogClient,
-                        InventoryClient inventoryClient, OrderStateStore stateStore) {
+                        InventoryClient inventoryClient, CouponClient couponClient,
+                        PaymentClient paymentClient, OrderStateStore stateStore) {
         this.orders = orders;
         this.addresses = addresses;
         this.cartClient = cartClient;
         this.catalogClient = catalogClient;
         this.inventoryClient = inventoryClient;
+        this.couponClient = couponClient;
+        this.paymentClient = paymentClient;
         this.stateStore = stateStore;
     }
 
@@ -112,6 +123,21 @@ public class OrderService {
             subtotal = subtotal.add(lineTotal);
         }
 
+        // Apply a coupon if supplied. Re-validate here (the coupon service is the
+        // source of truth) so a stale or tampered code can't discount the order.
+        BigDecimal discount = BigDecimal.ZERO;
+        String couponCode = null;
+        if (req.couponCode() != null && !req.couponCode().isBlank()) {
+            CouponValidation result = couponClient.validate(req.couponCode().trim(), subtotal);
+            if (result == null || !result.valid()) {
+                throw new InvalidCouponException(
+                        (result != null && result.message() != null) ? result.message() : "Invalid coupon");
+            }
+            discount = result.discountAmount() != null ? result.discountAmount() : BigDecimal.ZERO;
+            couponCode = req.couponCode().trim().toUpperCase();
+        }
+        BigDecimal total = subtotal.subtract(discount).max(BigDecimal.ZERO);
+
         // Persist the pending order before crossing the service boundary. This gives
         // inventory a durable business correlation id and makes the customer-scoped
         // idempotency constraint fail before any stock is reserved.
@@ -122,7 +148,9 @@ public class OrderService {
         order.setSubtotal(subtotal);
         order.setTax(BigDecimal.ZERO);
         order.setDeliveryFee(BigDecimal.ZERO);
-        order.setTotal(subtotal);
+        order.setDiscount(discount);
+        order.setCouponCode(couponCode);
+        order.setTotal(total);
         order.setPaymentMethod(paymentMethod);
         order.setIdempotencyKey(idempotencyKey);
         items.forEach(order::addItem);
@@ -156,6 +184,15 @@ public class OrderService {
             stateStore.recordReservation(order.getId(), reservation.reservationId());
             order.setInventoryReservationId(reservation.reservationId());
             order.setStatus(Order.STOCK_RESERVED);
+
+            // Take payment now that stock is secured. A decline throws below, which
+            // releases the reservation and marks the order failed (no stock stranded).
+            PaymentResult payment = paymentClient.charge(
+                    order.getId(), user.userId(), total, "INR", paymentMethod);
+            if (payment == null || !payment.success()) {
+                throw new PaymentFailedException(
+                        (payment != null && payment.message() != null) ? payment.message() : "Payment declined");
+            }
 
             // Commit the reservation (stock is sold).
             inventoryClient.confirm(reservation.reservationId());

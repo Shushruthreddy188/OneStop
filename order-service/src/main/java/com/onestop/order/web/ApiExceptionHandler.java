@@ -3,7 +3,9 @@ package com.onestop.order.web;
 import com.onestop.order.error.ApiExceptions.DependencyException;
 import com.onestop.order.error.ApiExceptions.EmptyCartException;
 import com.onestop.order.error.ApiExceptions.InsufficientStockException;
+import com.onestop.order.error.ApiExceptions.InvalidCouponException;
 import com.onestop.order.error.ApiExceptions.NotFoundException;
+import com.onestop.order.error.ApiExceptions.PaymentFailedException;
 import com.onestop.order.error.ApiExceptions.OrderStateException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -28,9 +30,15 @@ public class ApiExceptionHandler {
         return ResponseEntity.badRequest().body(body);
     }
 
-    @ExceptionHandler(EmptyCartException.class)
-    public ResponseEntity<Map<String, Object>> handleEmptyCart(EmptyCartException ex) {
+    @ExceptionHandler({EmptyCartException.class, InvalidCouponException.class})
+    public ResponseEntity<Map<String, Object>> handleBadRequest(RuntimeException ex) {
         return ResponseEntity.badRequest().body(base(HttpStatus.BAD_REQUEST, ex.getMessage()));
+    }
+
+    @ExceptionHandler(PaymentFailedException.class)
+    public ResponseEntity<Map<String, Object>> handlePaymentFailed(PaymentFailedException ex) {
+        return ResponseEntity.status(HttpStatus.PAYMENT_REQUIRED)
+                .body(base(HttpStatus.PAYMENT_REQUIRED, ex.getMessage()));
     }
 
     @ExceptionHandler(InsufficientStockException.class)

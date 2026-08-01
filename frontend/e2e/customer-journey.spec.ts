@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test';
 
 type Availability = { productId: number; availableQuantity: number; reservedQuantity: number };
+const internalHeaders = {
+  'X-Internal-Token': process.env.INTERNAL_API_TOKEN ?? 'dev-internal-token-change-me',
+};
 
 test('customer can register, purchase, receive confirmation, review, and cancel', async ({ page, request }) => {
   page.on('console', (message) => {
@@ -55,7 +58,9 @@ test('customer can register, purchase, receive confirmation, review, and cancel'
   const orderId = Number(page.url().split('/').pop());
 
   await expect.poll(async () => {
-    const response = await request.get(`http://localhost:8086/internal/notifications/orders/${orderId}`);
+    const response = await request.get(`http://localhost:8086/internal/notifications/orders/${orderId}`, {
+      headers: internalHeaders,
+    });
     if (!response.ok()) return 0;
     const rows = await response.json() as unknown[];
     return rows.length;

@@ -45,6 +45,13 @@ services:
     volumes:
       - kafka-data:/var/lib/kafka/data
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+
   identity-service:
     <<: *service-common
     build:
@@ -57,6 +64,8 @@ services:
       SERVER_PORT: 8081
       DB_NAME: identity_db
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.production}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Set ADMIN_EMAIL in .env.production}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env.production}
     depends_on:
       postgres:
         condition: service_healthy
@@ -72,9 +81,12 @@ services:
       <<: *service-environment
       SERVER_PORT: 8082
       DB_NAME: catalog_db
+      REDIS_HOST: redis
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
 
   cart-service:
     <<: *service-common
@@ -106,6 +118,7 @@ services:
       <<: *service-environment
       SERVER_PORT: 8084
       DB_NAME: inventory_db
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?Set INTERNAL_API_TOKEN in .env.production}
     depends_on:
       postgres:
         condition: service_healthy
@@ -124,6 +137,10 @@ services:
       CART_BASE_URL: http://cart-service:8083
       CATALOG_BASE_URL: http://catalog-service:8082
       INVENTORY_BASE_URL: http://inventory-service:8084
+      NOTIFICATION_BASE_URL: http://notification-service:8086
+      COUPON_BASE_URL: http://coupon-service:8090
+      PAYMENT_BASE_URL: http://payment-service:8091
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?Set INTERNAL_API_TOKEN in .env.production}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.production}
     depends_on:
@@ -144,11 +161,104 @@ services:
       SERVER_PORT: 8086
       DB_NAME: notification_db
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?Set INTERNAL_API_TOKEN in .env.production}
     depends_on:
       postgres:
         condition: service_healthy
       kafka:
         condition: service_started
+
+  search-service:
+    <<: *service-common
+    build: { context: ., dockerfile: infrastructure/docker/service.Dockerfile, args: { SERVICE: search-service } }
+    environment:
+      <<: *service-environment
+      SERVER_PORT: 8087
+      DB_NAME: search_db
+      CATALOG_BASE_URL: http://catalog-service:8082
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?Set INTERNAL_API_TOKEN in .env.production}
+    depends_on:
+      postgres: { condition: service_healthy }
+      catalog-service: { condition: service_started }
+
+  review-service:
+    <<: *service-common
+    build: { context: ., dockerfile: infrastructure/docker/service.Dockerfile, args: { SERVICE: review-service } }
+    environment:
+      <<: *service-environment
+      SERVER_PORT: 8088
+      DB_NAME: review_db
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.production}
+    depends_on: { postgres: { condition: service_healthy } }
+
+  wishlist-service:
+    <<: *service-common
+    build: { context: ., dockerfile: infrastructure/docker/service.Dockerfile, args: { SERVICE: wishlist-service } }
+    environment:
+      <<: *service-environment
+      SERVER_PORT: 8089
+      DB_NAME: wishlist_db
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.production}
+      CATALOG_BASE_URL: http://catalog-service:8082
+    depends_on:
+      postgres: { condition: service_healthy }
+      catalog-service: { condition: service_started }
+
+  coupon-service:
+    <<: *service-common
+    build: { context: ., dockerfile: infrastructure/docker/service.Dockerfile, args: { SERVICE: coupon-service } }
+    environment:
+      <<: *service-environment
+      SERVER_PORT: 8090
+      DB_NAME: coupon_db
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?Set INTERNAL_API_TOKEN in .env.production}
+    depends_on: { postgres: { condition: service_healthy } }
+
+  payment-service:
+    <<: *service-common
+    build: { context: ., dockerfile: infrastructure/docker/service.Dockerfile, args: { SERVICE: payment-service } }
+    environment:
+      <<: *service-environment
+      SERVER_PORT: 8091
+      DB_NAME: payment_db
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?Set INTERNAL_API_TOKEN in .env.production}
+    depends_on: { postgres: { condition: service_healthy } }
+
+  address-service:
+    <<: *service-common
+    build: { context: ., dockerfile: infrastructure/docker/service.Dockerfile, args: { SERVICE: address-service } }
+    environment:
+      <<: *service-environment
+      SERVER_PORT: 8092
+      DB_NAME: address_db
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.production}
+    depends_on: { postgres: { condition: service_healthy } }
+
+  delivery-service:
+    <<: *service-common
+    build: { context: ., dockerfile: infrastructure/docker/service.Dockerfile, args: { SERVICE: delivery-service } }
+    environment:
+      <<: *service-environment
+      SERVER_PORT: 8093
+      DB_NAME: delivery_db
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.production}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_started }
+
+  admin-service:
+    <<: *service-common
+    build: { context: ., dockerfile: infrastructure/docker/service.Dockerfile, args: { SERVICE: admin-service } }
+    environment:
+      <<: *service-environment
+      SERVER_PORT: 8094
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env.production}
+      CATALOG_BASE_URL: http://catalog-service:8082
+      ORDER_BASE_URL: http://order-service:8085
+      COUPON_BASE_URL: http://coupon-service:8090
+      INTERNAL_API_TOKEN: ${INTERNAL_API_TOKEN:?Set INTERNAL_API_TOKEN in .env.production}
+    depends_on: [catalog-service, order-service, coupon-service]
 
   api-gateway:
     <<: *service-common
@@ -165,13 +275,29 @@ services:
       CART_URI: http://cart-service:8083
       ORDER_URI: http://order-service:8085
       INVENTORY_URI: http://inventory-service:8084
-      CORS_ALLOWED_ORIGINS: http://98.94.85.197
+      SEARCH_URI: http://search-service:8087
+      REVIEW_URI: http://review-service:8088
+      WISHLIST_URI: http://wishlist-service:8089
+      COUPON_URI: http://coupon-service:8090
+      PAYMENT_URI: http://payment-service:8091
+      ADDRESS_URI: http://address-service:8092
+      DELIVERY_URI: http://delivery-service:8093
+      ADMIN_URI: http://admin-service:8094
+      CORS_ALLOWED_ORIGINS: ${PUBLIC_ORIGIN:?Set PUBLIC_ORIGIN in .env.production}
     depends_on:
       - identity-service
       - catalog-service
       - cart-service
       - inventory-service
       - order-service
+      - search-service
+      - review-service
+      - wishlist-service
+      - coupon-service
+      - payment-service
+      - address-service
+      - delivery-service
+      - admin-service
 
   frontend:
     build:
@@ -187,3 +313,4 @@ services:
 volumes:
   postgres-data:
   kafka-data:
+  redis-data:

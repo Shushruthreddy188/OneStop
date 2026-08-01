@@ -21,6 +21,9 @@ spring:
 
 # JWT settings consumed in Milestone 2. Override the secret via env in real runs.
 onestop:
+  bootstrap:
+    admin-email: ${ADMIN_EMAIL:}
+    admin-password: ${ADMIN_PASSWORD:}
   security:
     jwt:
       secret: ${JWT_SECRET:change-me-in-production-this-is-a-dev-only-256-bit-secret!!}
@@ -30,7 +33,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus,metrics
   endpoint:
     health:
       probes:

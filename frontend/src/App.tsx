@@ -9,13 +9,17 @@ import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrdersPage from './pages/OrdersPage';
 import OrderDetailPage from './pages/OrderDetailPage';
+import WishlistPage from './pages/WishlistPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
 import ProtectedRoute from './auth/ProtectedRoute';
+import AdminRoute from './auth/AdminRoute';
 import { useAuth } from './auth/AuthContext';
 import { useCart } from './cart/useCart';
 import './App.css';
 
 export default function App() {
   const { isAuthenticated, user } = useAuth();
+  const isAdmin = user?.roles?.includes('ROLE_ADMIN') ?? false;
   const { data: cart } = useCart();
   const cartCount = cart?.totalItems ?? 0;
 
@@ -31,7 +35,9 @@ export default function App() {
           <nav className="main-nav">
             <NavLink to="/" end>Home</NavLink>
             <NavLink to="/products">Products</NavLink>
+            {isAuthenticated && <NavLink to="/wishlist">Wishlist</NavLink>}
             {isAuthenticated && <NavLink to="/orders">Orders</NavLink>}
+            {isAdmin && <NavLink to="/admin">Admin</NavLink>}
           </nav>
 
           <div className="header-actions">
@@ -66,6 +72,8 @@ export default function App() {
           <Route path="/cart" element={<ProtectedRoute><CartPage /></ProtectedRoute>} />
           <Route path="/checkout" element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>} />
           <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+          <Route path="/wishlist" element={<ProtectedRoute><WishlistPage /></ProtectedRoute>} />
+          <Route path="/admin" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
           <Route path="/orders/:id" element={<ProtectedRoute><OrderDetailPage /></ProtectedRoute>} />
           <Route path="*" element={<p>Not found.</p>} />
         </Routes>

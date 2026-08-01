@@ -30,6 +30,8 @@ spring:
         spring.json.trusted.packages: "*"
 
 onestop:
+  security:
+    internal-token: ${INTERNAL_API_TOKEN:dev-internal-token-change-me}
   kafka:
     topics:
       order-confirmed: ${ORDER_CONFIRMED_TOPIC:order.confirmed}
@@ -38,7 +40,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus,metrics
   endpoint:
     health:
       probes:

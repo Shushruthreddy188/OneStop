@@ -1,6 +1,6 @@
 package com.onestop.catalog.web;
 
-import com.onestop.catalog.repo.CategoryRepository;
+import com.onestop.catalog.service.CatalogQueryService;
 import com.onestop.catalog.web.dto.CategoryDto;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -12,15 +12,15 @@ import java.util.List;
 @RequestMapping("/api/categories")
 public class CategoryController {
 
-    private final CategoryRepository categories;
+    private final CatalogQueryService catalogQueryService;
 
-    public CategoryController(CategoryRepository categories) {
-        this.categories = categories;
+    public CategoryController(CatalogQueryService catalogQueryService) {
+        this.catalogQueryService = catalogQueryService;
     }
 
     /** GET /api/categories - flat list; parentId is null for top-level categories. */
     @GetMapping
     public List<CategoryDto> list() {
-        return categories.findAllDto();
+        return catalogQueryService.getCategories();
     }
 }

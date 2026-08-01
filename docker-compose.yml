@@ -7,7 +7,7 @@
 #
 #   docker compose up --build
 #
-# Observability is intentionally absent until a later milestone.
+# Observability: Prometheus (metrics), Grafana (dashboards), Zipkin (tracing).
 
 name: onestop
 
@@ -15,6 +15,9 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: onestop-postgres
+    # Many services share this one instance; raise the connection ceiling so their
+    # Hikari pools (10 each) don't exhaust the default max_connections of 100.
+    command: ["postgres", "-c", "max_connections=300"]
     environment:
       POSTGRES_USER: onestop
       POSTGRES_PASSWORD: onestop
@@ -49,6 +52,42 @@ services:
     ports:
       - "9092:9092"
 
+  redis:
+    image: redis:7-alpine
+    container_name: onestop-redis
+    ports:
+      - "6379:6379"
+
+  # ---- Observability (Sprint 6) ----
+  zipkin:
+    image: openzipkin/zipkin-slim:3.4
+    container_name: onestop-zipkin
+    ports:
+      - "9411:9411"
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: onestop-prometheus
+    volumes:
+      - ./infrastructure/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: onestop-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./infrastructure/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
   identity-service:
     build:
       context: .
@@ -75,15 +114,21 @@ services:
         SERVICE: catalog-service
     environment:
       SERVER_PORT: 8082
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
       DB_HOST: postgres
       DB_NAME: catalog_db
       DB_USERNAME: onestop
       DB_PASSWORD: onestop
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     ports:
       - "8082:8082"
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_started
 
   cart-service:
     build:
@@ -93,6 +138,8 @@ services:
         SERVICE: cart-service
     environment:
       SERVER_PORT: 8083
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
       DB_HOST: postgres
       DB_NAME: cart_db
       DB_USERNAME: onestop
@@ -112,10 +159,13 @@ services:
         SERVICE: inventory-service
     environment:
       SERVER_PORT: 8084
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
       DB_HOST: postgres
       DB_NAME: inventory_db
       DB_USERNAME: onestop
       DB_PASSWORD: onestop
+      INTERNAL_API_TOKEN: dev-internal-token-change-me
     ports:
       - "8084:8084"
     depends_on:
@@ -130,6 +180,8 @@ services:
         SERVICE: order-service
     environment:
       SERVER_PORT: 8085
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
       DB_HOST: postgres
       DB_NAME: order_db
       DB_USERNAME: onestop
@@ -137,7 +189,10 @@ services:
       CART_BASE_URL: http://cart-service:8083
       CATALOG_BASE_URL: http://catalog-service:8082
       INVENTORY_BASE_URL: http://inventory-service:8084
+      COUPON_BASE_URL: http://coupon-service:8090
+      PAYMENT_BASE_URL: http://payment-service:8091
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      INTERNAL_API_TOKEN: dev-internal-token-change-me
     ports:
       - "8085:8085"
     depends_on:
@@ -159,6 +214,7 @@ services:
       DB_USERNAME: onestop
       DB_PASSWORD: onestop
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      INTERNAL_API_TOKEN: dev-internal-token-change-me
     ports:
       - "8086:8086"
     depends_on:
@@ -166,6 +222,155 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
+
+  search-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/service.Dockerfile
+      args:
+        SERVICE: search-service
+    environment:
+      SERVER_PORT: 8087
+      DB_HOST: postgres
+      DB_NAME: search_db
+      DB_USERNAME: onestop
+      DB_PASSWORD: onestop
+      CATALOG_BASE_URL: http://catalog-service:8082
+      INTERNAL_API_TOKEN: dev-internal-token-change-me
+    ports:
+      - "8087:8087"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  review-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/service.Dockerfile
+      args:
+        SERVICE: review-service
+    environment:
+      SERVER_PORT: 8088
+      DB_HOST: postgres
+      DB_NAME: review_db
+      DB_USERNAME: onestop
+      DB_PASSWORD: onestop
+    ports:
+      - "8088:8088"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  wishlist-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/service.Dockerfile
+      args:
+        SERVICE: wishlist-service
+    environment:
+      SERVER_PORT: 8089
+      DB_HOST: postgres
+      DB_NAME: wishlist_db
+      DB_USERNAME: onestop
+      DB_PASSWORD: onestop
+      CATALOG_BASE_URL: http://catalog-service:8082
+    ports:
+      - "8089:8089"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  coupon-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/service.Dockerfile
+      args:
+        SERVICE: coupon-service
+    environment:
+      SERVER_PORT: 8090
+      DB_HOST: postgres
+      DB_NAME: coupon_db
+      DB_USERNAME: onestop
+      DB_PASSWORD: onestop
+      INTERNAL_API_TOKEN: dev-internal-token-change-me
+    ports:
+      - "8090:8090"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  payment-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/service.Dockerfile
+      args:
+        SERVICE: payment-service
+    environment:
+      SERVER_PORT: 8091
+      DB_HOST: postgres
+      DB_NAME: payment_db
+      DB_USERNAME: onestop
+      DB_PASSWORD: onestop
+      INTERNAL_API_TOKEN: dev-internal-token-change-me
+    ports:
+      - "8091:8091"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  address-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/service.Dockerfile
+      args:
+        SERVICE: address-service
+    environment:
+      SERVER_PORT: 8092
+      DB_HOST: postgres
+      DB_NAME: address_db
+      DB_USERNAME: onestop
+      DB_PASSWORD: onestop
+    ports:
+      - "8092:8092"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  delivery-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/service.Dockerfile
+      args:
+        SERVICE: delivery-service
+    environment:
+      SERVER_PORT: 8093
+      DB_HOST: postgres
+      DB_NAME: delivery_db
+      DB_USERNAME: onestop
+      DB_PASSWORD: onestop
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    ports:
+      - "8093:8093"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+
+  admin-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/service.Dockerfile
+      args:
+        SERVICE: admin-service
+    environment:
+      SERVER_PORT: 8094
+      CATALOG_BASE_URL: http://catalog-service:8082
+      ORDER_BASE_URL: http://order-service:8085
+      COUPON_BASE_URL: http://coupon-service:8090
+      INTERNAL_API_TOKEN: dev-internal-token-change-me
+    ports:
+      - "8094:8094"
 
   api-gateway:
     build:
@@ -175,11 +380,21 @@ services:
         SERVICE: api-gateway
     environment:
       SERVER_PORT: 8080
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
       IDENTITY_URI: http://identity-service:8081
       CATALOG_URI: http://catalog-service:8082
       CART_URI: http://cart-service:8083
       ORDER_URI: http://order-service:8085
       INVENTORY_URI: http://inventory-service:8084
+      SEARCH_URI: http://search-service:8087
+      REVIEW_URI: http://review-service:8088
+      WISHLIST_URI: http://wishlist-service:8089
+      COUPON_URI: http://coupon-service:8090
+      PAYMENT_URI: http://payment-service:8091
+      ADDRESS_URI: http://address-service:8092
+      DELIVERY_URI: http://delivery-service:8093
+      ADMIN_URI: http://admin-service:8094
       CORS_ALLOWED_ORIGINS: http://localhost:5173
     ports:
       - "8080:8080"
@@ -188,6 +403,14 @@ services:
       - catalog-service
       - cart-service
       - order-service
+      - search-service
+      - review-service
+      - wishlist-service
+      - coupon-service
+      - payment-service
+      - address-service
+      - delivery-service
+      - admin-service
 
 volumes:
   postgres-data:

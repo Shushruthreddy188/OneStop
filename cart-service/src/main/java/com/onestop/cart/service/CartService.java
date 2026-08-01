@@ -85,8 +85,9 @@ public class CartService {
     }
 
     private Cart getOrCreateCart(Long customerId) {
+        carts.createActiveCartIfMissing(customerId);
         return carts.findByCustomerIdAndStatus(customerId, ACTIVE)
-                .orElseGet(() -> carts.save(new Cart(customerId)));
+                .orElseThrow(() -> new IllegalStateException("Active cart was not created"));
     }
 
     private CartItem findItem(Cart cart, Long itemId) {

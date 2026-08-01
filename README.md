@@ -1,6 +1,6 @@
 # OneStop
 
-OneStop is a working retail MVP built as a Java/Spring microservice system with a React frontend.
+OneStop is a working retail platform built as a Java/Spring microservice system with a React frontend.
 The current architecture is documented in `OneStop_MVP_Architecture_v0.2.docx`.
 
 ## MVP status
@@ -28,7 +28,8 @@ Kafka delivery still creates only one order-confirmation notification.
 - Frontend: React, TypeScript, Vite, React Router, TanStack Query, React Hook Form
 - Backend: Java 21, Spring Boot 3.3.5, Spring Data JPA, Flyway
 - Data: PostgreSQL database per service
-- Messaging: Kafka
+- Messaging and cache: Kafka, Redis
+- Observability: Prometheus, Grafana, Zipkin
 - Edge: Spring Cloud Gateway
 - Runtime: Docker Compose
 - Tests: JUnit, Mockito, Testcontainers
@@ -44,13 +45,28 @@ cart-service/          Customer carts (8083)
 inventory-service/     Stock and reservations (8084)
 order-service/         Checkout, orders, reconciliation, outbox (8085)
 notification-service/  Kafka consumer and notification log (8086)
+search-service/        Typo-tolerant search and autocomplete (8087)
+review-service/        Product ratings and reviews (8088)
+wishlist-service/      Customer wishlists (8089)
+coupon-service/        Coupon rules and validation (8090)
+payment-service/       Idempotent simulated payments (8091)
+address-service/       Customer address ownership (8092)
+delivery-service/      Kafka-driven shipment tracking (8093)
+admin-service/         Role-gated admin aggregator (8094)
 contracts/             OpenAPI and event contracts
 infrastructure/        Docker, database, Kafka, observability assets
 docker-compose.yml
 pom.xml
 ```
 
-## Run the MVP
+## V2 features
+
+V2 adds trigram search, Redis catalog caching, reviews, wishlists, coupons, idempotent payments,
+dedicated addresses, Kafka-driven delivery tracking, an RBAC admin dashboard, and metrics/tracing.
+All internal mutation endpoints require `X-Internal-Token`; only the gateway and frontend are exposed
+by the production Compose stack.
+
+## Run locally
 
 Prerequisites: Docker Desktop. For local builds, use JDK 21 and Node.js 22.22+.
 
@@ -79,8 +95,24 @@ GitHub Actions runs `clean verify` for every backend module and performs a locke
 lint, and production build for pull requests and changes to the primary branch. After those gates pass,
 Playwright starts the Docker Compose stack and verifies the complete customer journey in Chromium.
 
+## Production upgrade
+
+Production uses `compose.prod.yml`. On the EC2 host, pull the release, create `.env.production` from
+`.env.production.example`, then run the one-time/rerunnable data preparation before starting V2:
+
+```bash
+chmod +x tools/prepare-v2-production.sh
+./tools/prepare-v2-production.sh
+docker compose --env-file .env.production -f compose.prod.yml up -d --build
+curl -H "X-Internal-Token: $INTERNAL_API_TOKEN" -X POST http://localhost:8087/internal/search/reindex
+```
+
+The preparation script creates missing V2 databases and copies legacy Identity Service addresses into
+Address Service without deleting the source data. Keep `.env.production` out of Git and use unique
+values for the database password, JWT secret, internal token, and admin password.
+
 ## Next milestone
 
-The MVP feature path, durable notification pipeline, CI release gate, and repeatable browser-level
-customer journey are complete. Remaining release hardening includes distributed tracing and alerts,
-dependency/security remediation, contract tests, secrets management, and shared deployment.
+The next operational step is deploying this V2 stack to the existing EC2 host, validating all health
+and Prometheus targets, running the browser journey against the public URL, and then tagging the V2
+release. HTTPS/domain setup and managed secrets are recommended before public traffic.

@@ -1,0 +1,33 @@
+server:
+  port: ${SERVER_PORT:8094}
+
+spring:
+  application:
+    name: admin-service
+
+onestop:
+  security:
+    internal-token: ${INTERNAL_API_TOKEN:dev-internal-token-change-me}
+    jwt:
+      secret: ${JWT_SECRET:change-me-in-production-this-is-a-dev-only-256-bit-secret!!}
+  clients:
+    catalog:
+      base-url: ${CATALOG_BASE_URL:http://localhost:8082}
+    order:
+      base-url: ${ORDER_BASE_URL:http://localhost:8085}
+    coupon:
+      base-url: ${COUPON_BASE_URL:http://localhost:8090}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

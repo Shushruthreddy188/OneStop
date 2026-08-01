@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useParams } from 'react-router';
 import { cancelOrder, getOrder } from '../api/orders';
+import { fetchOrderPayments } from '../api/payments';
+import DeliveryTimeline from '../components/DeliveryTimeline';
 import { formatMoney } from '../lib/format';
 import { apiErrorMessage } from '../lib/apiError';
 import './OrdersPage.css';
@@ -15,6 +17,12 @@ export default function OrderDetailPage() {
   const { data: order, isLoading, isError } = useQuery({
     queryKey: ['order', orderId],
     queryFn: () => getOrder(orderId),
+    enabled: Number.isFinite(orderId),
+  });
+
+  const paymentsQuery = useQuery({
+    queryKey: ['payments', orderId],
+    queryFn: () => fetchOrderPayments(orderId),
     enabled: Number.isFinite(orderId),
   });
 
@@ -50,7 +58,20 @@ export default function OrderDetailPage() {
         ))}
       </ul>
 
+      {order.discount > 0 && (
+        <p className="muted small">
+          Subtotal {formatMoney(order.subtotal)} · Discount −{formatMoney(order.discount)}
+          {order.couponCode ? ` (${order.couponCode})` : ''}
+        </p>
+      )}
       <p className="subtotal">Total: <strong>{formatMoney(order.total)}</strong> · {order.paymentMethod}</p>
+
+      {paymentsQuery.data && paymentsQuery.data.length > 0 && (
+        <p className="muted small">
+          Payment: {paymentsQuery.data[paymentsQuery.data.length - 1].status}
+          {' '}via {paymentsQuery.data[paymentsQuery.data.length - 1].provider}
+        </p>
+      )}
 
       {order.address && (
         <>
@@ -63,6 +84,8 @@ export default function OrderDetailPage() {
           </p>
         </>
       )}
+
+      <DeliveryTimeline orderId={order.id} />
 
       {order.status === 'CONFIRMED' && (
         <div>

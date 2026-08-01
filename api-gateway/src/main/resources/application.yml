@@ -37,6 +37,38 @@ spring:
           uri: ${INVENTORY_URI:http://localhost:8084}
           predicates:
             - Path=/api/inventory/**
+        - id: search
+          uri: ${SEARCH_URI:http://localhost:8087}
+          predicates:
+            - Path=/api/search/**
+        - id: reviews
+          uri: ${REVIEW_URI:http://localhost:8088}
+          predicates:
+            - Path=/api/reviews/**
+        - id: wishlist
+          uri: ${WISHLIST_URI:http://localhost:8089}
+          predicates:
+            - Path=/api/wishlist/**
+        - id: coupons
+          uri: ${COUPON_URI:http://localhost:8090}
+          predicates:
+            - Path=/api/coupons/**
+        - id: payments
+          uri: ${PAYMENT_URI:http://localhost:8091}
+          predicates:
+            - Path=/api/payments/**
+        - id: addresses
+          uri: ${ADDRESS_URI:http://localhost:8092}
+          predicates:
+            - Path=/api/addresses/**
+        - id: deliveries
+          uri: ${DELIVERY_URI:http://localhost:8093}
+          predicates:
+            - Path=/api/deliveries/**
+        - id: admin
+          uri: ${ADMIN_URI:http://localhost:8094}
+          predicates:
+            - Path=/api/admin/**
         - id: cart
           uri: ${CART_URI:http://localhost:8083}
           predicates:
@@ -50,7 +82,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,gateway
+        include: health,info,gateway,prometheus,metrics
   endpoint:
     health:
       probes:

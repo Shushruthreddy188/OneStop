@@ -103,6 +103,18 @@
   width: 100%;
 }
 
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.card-actions .add-to-cart {
+  margin-top: 0;
+  flex: 1;
+}
+
 /* Pager */
 .pager {
   display: flex;

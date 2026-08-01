@@ -27,6 +27,8 @@ export interface Order {
   subtotal: number;
   tax: number;
   deliveryFee: number;
+  discount: number;
+  couponCode: string | null;
   total: number;
   paymentMethod: string;
   items: OrderItem[];
@@ -51,6 +53,7 @@ export interface CheckoutRequest {
   postalCode?: string;
   country: string;
   paymentMethod: string;
+  couponCode?: string;
   idempotencyKey: string;
 }
 

@@ -1,6 +1,7 @@
 package com.onestop.catalog.web;
 
 import com.onestop.catalog.repo.ProductRepository;
+import com.onestop.catalog.service.CatalogQueryService;
 import com.onestop.catalog.web.dto.PagedResponse;
 import com.onestop.catalog.web.dto.ProductDetailDto;
 import com.onestop.catalog.web.dto.ProductSummaryDto;
@@ -19,9 +20,11 @@ public class ProductController {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final ProductRepository products;
+    private final CatalogQueryService catalogQueryService;
 
-    public ProductController(ProductRepository products) {
+    public ProductController(ProductRepository products, CatalogQueryService catalogQueryService) {
         this.products = products;
+        this.catalogQueryService = catalogQueryService;
     }
 
     /** GET /api/products?page=0&size=20&category={id}&brand={id}&q={text} */
@@ -47,8 +50,7 @@ public class ProductController {
     /** GET /api/products/{id} */
     @GetMapping("/{id}")
     public ResponseEntity<ProductDetailDto> get(@PathVariable Long id) {
-        return products.findDetailById(id)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        ProductDetailDto product = catalogQueryService.getProductOrNull(id);
+        return product != null ? ResponseEntity.ok(product) : ResponseEntity.notFound().build();
     }
 }

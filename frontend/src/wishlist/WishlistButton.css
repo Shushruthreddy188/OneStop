@@ -1,0 +1,26 @@
+.wishlist-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 1.05rem;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wishlist-btn:hover:not(:disabled) {
+  color: var(--danger);
+  border-color: var(--danger);
+  background: var(--surface);
+}
+
+.wishlist-btn.saved {
+  color: var(--danger);
+  border-color: var(--danger);
+}

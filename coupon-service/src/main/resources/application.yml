@@ -1,0 +1,35 @@
+server:
+  port: ${SERVER_PORT:8090}
+
+spring:
+  application:
+    name: coupon-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:coupon_db}
+    username: ${DB_USERNAME:onestop}
+    password: ${DB_PASSWORD:onestop}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+onestop:
+  security:
+    internal-token: ${INTERNAL_API_TOKEN:dev-internal-token-change-me}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

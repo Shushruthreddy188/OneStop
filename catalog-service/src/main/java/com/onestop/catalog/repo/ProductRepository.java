@@ -25,17 +25,17 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
             FROM Product p
             LEFT JOIN p.brand b
             LEFT JOIN p.category c
-            WHERE (:categoryId IS NULL OR c.id = :categoryId)
+            WHERE (:categoryId IS NULL OR c.id = :categoryId OR c.parent.id = :categoryId)
               AND (:brandId IS NULL OR b.id = :brandId)
               AND LOWER(p.name) LIKE LOWER(:namePattern)
-            ORDER BY p.name
+            ORDER BY p.name, p.id
             """,
             countQuery = """
             SELECT count(p)
             FROM Product p
             LEFT JOIN p.brand b
             LEFT JOIN p.category c
-            WHERE (:categoryId IS NULL OR c.id = :categoryId)
+            WHERE (:categoryId IS NULL OR c.id = :categoryId OR c.parent.id = :categoryId)
               AND (:brandId IS NULL OR b.id = :brandId)
               AND LOWER(p.name) LIKE LOWER(:namePattern)
             """)

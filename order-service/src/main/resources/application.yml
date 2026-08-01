@@ -32,6 +32,7 @@ onestop:
     topics:
       order-confirmed: ${ORDER_CONFIRMED_TOPIC:order.confirmed}
   security:
+    internal-token: ${INTERNAL_API_TOKEN:dev-internal-token-change-me}
     jwt:
       secret: ${JWT_SECRET:change-me-in-production-this-is-a-dev-only-256-bit-secret!!}
   clients:
@@ -43,6 +44,10 @@ onestop:
       base-url: ${INVENTORY_BASE_URL:http://localhost:8084}
     notification:
       base-url: ${NOTIFICATION_BASE_URL:http://localhost:8086}
+    coupon:
+      base-url: ${COUPON_BASE_URL:http://localhost:8090}
+    payment:
+      base-url: ${PAYMENT_BASE_URL:http://localhost:8091}
   reconciliation:
     enabled: ${ORDER_RECONCILIATION_ENABLED:true}
     initial-delay-ms: ${ORDER_RECONCILIATION_INITIAL_DELAY_MS:30000}
@@ -52,7 +57,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus,metrics
   endpoint:
     health:
       probes:

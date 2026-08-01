@@ -45,6 +45,11 @@ public class Order {
     @Column(name = "delivery_fee")
     private BigDecimal deliveryFee;
 
+    private BigDecimal discount = BigDecimal.ZERO;
+
+    @Column(name = "coupon_code")
+    private String couponCode;
+
     private BigDecimal total;
 
     @Column(name = "payment_method")

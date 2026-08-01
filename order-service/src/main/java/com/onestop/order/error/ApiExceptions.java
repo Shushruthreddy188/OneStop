@@ -15,6 +15,20 @@ public final class ApiExceptions {
         }
     }
 
+    /** 400 - the supplied coupon code is invalid or not applicable to this order. */
+    public static class InvalidCouponException extends RuntimeException {
+        public InvalidCouponException(String message) {
+            super(message);
+        }
+    }
+
+    /** 402 - payment was declined; the order is not confirmed and stock is released. */
+    public static class PaymentFailedException extends RuntimeException {
+        public PaymentFailedException(String message) {
+            super(message);
+        }
+    }
+
     /** 409 - one or more items could not be reserved; no order was confirmed. */
     public static class InsufficientStockException extends RuntimeException {
         private final transient List<String> unavailableSkus;

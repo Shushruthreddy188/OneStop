@@ -1,0 +1,74 @@
+.tracking {
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+.tracking-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tl-item {
+  position: relative;
+  display: flex;
+  gap: 0.9rem;
+  padding: 0 0 1.1rem 0;
+}
+
+/* Connecting line between dots */
+.tl-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 16px;
+  bottom: 0;
+  width: 2px;
+  background: var(--border);
+}
+
+.tl-item.done:not(:last-child)::before {
+  background: var(--primary);
+}
+
+.tl-dot {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  z-index: 1;
+}
+
+.tl-item.done .tl-dot {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.tl-item.current .tl-dot {
+  box-shadow: 0 0 0 4px var(--focus);
+}
+
+.tl-label {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.tl-item.done .tl-label {
+  color: var(--text);
+}
+
+.tl-item.current .tl-label {
+  color: var(--primary);
+}

@@ -1,0 +1,38 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+
+scrape_configs:
+  - job_name: onestop-services
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ['api-gateway:8080']
+        labels: { service: api-gateway }
+      - targets: ['identity-service:8081']
+        labels: { service: identity-service }
+      - targets: ['catalog-service:8082']
+        labels: { service: catalog-service }
+      - targets: ['cart-service:8083']
+        labels: { service: cart-service }
+      - targets: ['inventory-service:8084']
+        labels: { service: inventory-service }
+      - targets: ['order-service:8085']
+        labels: { service: order-service }
+      - targets: ['notification-service:8086']
+        labels: { service: notification-service }
+      - targets: ['search-service:8087']
+        labels: { service: search-service }
+      - targets: ['review-service:8088']
+        labels: { service: review-service }
+      - targets: ['wishlist-service:8089']
+        labels: { service: wishlist-service }
+      - targets: ['coupon-service:8090']
+        labels: { service: coupon-service }
+      - targets: ['payment-service:8091']
+        labels: { service: payment-service }
+      - targets: ['address-service:8092']
+        labels: { service: address-service }
+      - targets: ['delivery-service:8093']
+        labels: { service: delivery-service }
+      - targets: ['admin-service:8094']
+        labels: { service: admin-service }

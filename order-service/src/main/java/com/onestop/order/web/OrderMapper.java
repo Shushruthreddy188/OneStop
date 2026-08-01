@@ -32,7 +32,8 @@ public final class OrderMapper {
                 .map(OrderMapper::toItemDto)
                 .toList();
         return new OrderDto(o.getId(), o.getStatus(), o.getSubtotal(), o.getTax(),
-                o.getDeliveryFee(), o.getTotal(), o.getPaymentMethod(), items, toAddressDto(address));
+                o.getDeliveryFee(), o.getDiscount(), o.getCouponCode(), o.getTotal(),
+                o.getPaymentMethod(), items, toAddressDto(address));
     }
 
     public static OrderSummaryDto toSummary(Order o) {
