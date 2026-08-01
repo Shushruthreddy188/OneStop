@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 import { listAddresses } from '../api/auth';
 import { placeOrder, type CheckoutRequest } from '../api/orders';
 import { useCart, CART_QUERY_KEY } from '../cart/useCart';

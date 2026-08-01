@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { listOrders } from '../api/orders';
 import { formatMoney } from '../lib/format';
 import './OrdersPage.css';

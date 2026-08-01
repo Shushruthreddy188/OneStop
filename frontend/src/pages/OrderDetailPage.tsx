@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useLocation, useParams } from 'react-router';
 import { cancelOrder, getOrder } from '../api/orders';
 import { formatMoney } from '../lib/format';
 import { apiErrorMessage } from '../lib/apiError';

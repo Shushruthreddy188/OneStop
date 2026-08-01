@@ -3,6 +3,11 @@ import { expect, test } from '@playwright/test';
 type Availability = { productId: number; availableQuantity: number; reservedQuantity: number };
 
 test('customer can register, purchase, receive confirmation, review, and cancel', async ({ page, request }) => {
+  page.on('console', (message) => {
+    if (message.type() === 'error') console.error(`Browser console: ${message.text()}`);
+  });
+  page.on('pageerror', (error) => console.error(`Browser page error: ${error.message}`));
+
   const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const email = `e2e-${unique}@example.com`;
 

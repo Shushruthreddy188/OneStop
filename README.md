@@ -52,7 +52,7 @@ pom.xml
 
 ## Run the MVP
 
-Prerequisites: Docker Desktop. For local builds, use JDK 21 and Node.js 20+.
+Prerequisites: Docker Desktop. For local builds, use JDK 21 and Node.js 22.22+.
 
 ```bash
 docker compose up --build

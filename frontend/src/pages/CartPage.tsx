@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 import { clearCart, removeItem, updateItem, type Cart } from '../api/cart';
 import { useCart, CART_QUERY_KEY } from '../cart/useCart';
 import { formatMoney } from '../lib/format';
