@@ -1,0 +1,130 @@
+/* ---- Header ---- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.header-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0.7rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: var(--text);
+}
+
+.brand:hover {
+  text-decoration: none;
+}
+
+.brand-mark {
+  font-size: 1.3rem;
+}
+
+.brand-name {
+  letter-spacing: -0.02em;
+}
+
+.brand-name::after {
+  content: '';
+}
+
+.main-nav {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.main-nav a,
+.header-actions a {
+  color: var(--muted);
+  font-weight: 600;
+  padding: 0.4rem 0.7rem;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s, background 0.15s;
+}
+
+.main-nav a:hover,
+.header-actions a:hover {
+  color: var(--text);
+  background: var(--surface-2);
+  text-decoration: none;
+}
+
+.main-nav a.active,
+.header-actions a.active {
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cart-link {
+  position: relative;
+}
+
+.cart-badge {
+  display: inline-block;
+  margin-left: 0.3rem;
+  min-width: 1.25rem;
+  padding: 0 0.35rem;
+  font-size: 0.72rem;
+  line-height: 1.25rem;
+  text-align: center;
+  color: var(--on-primary);
+  background: var(--primary);
+  border-radius: var(--radius-pill);
+}
+
+.btn-register {
+  color: var(--on-primary) !important;
+  background: var(--primary);
+}
+
+.btn-register:hover {
+  background: var(--primary-600) !important;
+  color: var(--on-primary) !important;
+}
+
+/* ---- Layout ---- */
+.app-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.75rem 1.25rem 3rem;
+}
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  padding: 1.25rem;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .header-inner {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .main-nav {
+    order: 3;
+    width: 100%;
+  }
+}

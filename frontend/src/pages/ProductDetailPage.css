@@ -1,0 +1,39 @@
+.product-detail {
+  max-width: 720px;
+}
+
+.detail-card {
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.detail-price {
+  margin: 0.5rem 0;
+}
+
+.detail-price .price {
+  font-size: 1.5rem;
+}
+
+.detail-actions {
+  margin-top: 1rem;
+  max-width: 280px;
+}
+
+.stock-pill {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-pill);
+}
+
+.stock-in {
+  background: color-mix(in srgb, var(--success) 15%, transparent);
+  color: var(--success);
+}
+
+.stock-out {
+  background: color-mix(in srgb, var(--danger) 15%, transparent);
+  color: var(--danger);
+}

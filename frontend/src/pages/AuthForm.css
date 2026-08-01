@@ -1,0 +1,81 @@
+.auth-form {
+  max-width: 440px;
+  margin: 1rem auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1.5rem 1.5rem 1.75rem;
+}
+
+.auth-form.wide {
+  max-width: 680px;
+}
+
+.auth-form form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin: 1rem 0 0.5rem;
+}
+
+.auth-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.auth-form .row {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.auth-form .row label {
+  flex: 1;
+}
+
+.auth-form label.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 400;
+  color: var(--text);
+}
+
+.auth-form label.checkbox input {
+  width: auto;
+}
+
+.auth-form button[type='submit'] {
+  margin-top: 0.25rem;
+  padding: 0.65rem;
+}
+
+.address-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.address-list li {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.8rem;
+  background: var(--surface-2);
+}
+
+.badge {
+  margin-left: 0.5rem;
+  font-size: 0.7rem;
+  background: var(--primary);
+  color: var(--on-primary);
+  border-radius: var(--radius-pill);
+  padding: 0.1rem 0.5rem;
+  vertical-align: middle;
+}

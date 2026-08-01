@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!--
+      OneStop root build.
+
+      This POM plays two roles:
+        1. Parent  - shares the Spring Boot / Spring Cloud versions, Java level,
+                     and common dependencies with every service.
+        2. Aggregator (<modules>) - lets you build everything from the repo root
+                     with `./mvnw clean verify`, while each service still remains
+                     an independently runnable and deployable Spring Boot app.
+    -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.3.5</version>
+        <relativePath/>
+    </parent>
+
+    <groupId>com.onestop</groupId>
+    <artifactId>onestop-parent</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>OneStop</name>
+    <description>OneStop online retail platform - MVP monorepo</description>
+
+    <modules>
+        <module>api-gateway</module>
+        <module>identity-service</module>
+        <module>catalog-service</module>
+        <module>cart-service</module>
+        <module>inventory-service</module>
+        <module>order-service</module>
+        <module>notification-service</module>
+    </modules>
+
+    <properties>
+        <java.version>21</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <spring-cloud.version>2023.0.3</spring-cloud.version>
+        <springdoc.version>2.6.0</springdoc.version>
+        <jjwt.version>0.12.6</jjwt.version>
+        <!-- 1.21.4 is required for Docker Engine 29 compatibility. -->
+        <testcontainers.version>1.21.4</testcontainers.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Cloud BOM (used by the API Gateway). -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- JJWT (JSON Web Token) - used by the Identity Service. -->
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <!--
+      No <build> plugins here. The aggregator has packaging=pom, so the
+      spring-boot-maven-plugin does not apply to it. Each service module
+      declares the plugin itself and inherits the default `repackage` binding
+      from spring-boot-starter-parent, producing an executable jar.
+    -->
+</project>

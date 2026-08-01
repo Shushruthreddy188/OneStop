@@ -1,0 +1,63 @@
+server:
+  port: ${SERVER_PORT:8085}
+
+spring:
+  application:
+    name: order-service
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:order_db}
+    username: ${DB_USERNAME:onestop}
+    password: ${DB_PASSWORD:onestop}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+# Downstream service locations (used by the checkout coordinator).
+onestop:
+  kafka:
+    topics:
+      order-confirmed: ${ORDER_CONFIRMED_TOPIC:order.confirmed}
+  security:
+    jwt:
+      secret: ${JWT_SECRET:change-me-in-production-this-is-a-dev-only-256-bit-secret!!}
+  clients:
+    cart:
+      base-url: ${CART_BASE_URL:http://localhost:8083}
+    catalog:
+      base-url: ${CATALOG_BASE_URL:http://localhost:8082}
+    inventory:
+      base-url: ${INVENTORY_BASE_URL:http://localhost:8084}
+    notification:
+      base-url: ${NOTIFICATION_BASE_URL:http://localhost:8086}
+  reconciliation:
+    enabled: ${ORDER_RECONCILIATION_ENABLED:true}
+    initial-delay-ms: ${ORDER_RECONCILIATION_INITIAL_DELAY_MS:30000}
+    fixed-delay-ms: ${ORDER_RECONCILIATION_FIXED_DELAY_MS:30000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

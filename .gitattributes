@@ -1,0 +1,12 @@
+* text=auto
+
+# Keep Unix entry points executable across Windows checkouts.
+mvnw text eol=lf
+*.sh text eol=lf
+
+# Windows command scripts use native line endings.
+*.cmd text eol=crlf
+
+# Binary project artifacts.
+*.docx binary
+*.png binary

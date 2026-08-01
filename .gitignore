@@ -1,0 +1,27 @@
+# --- Java / Maven ---
+target/
+.m2/
+*.jar
+*.war
+*.class
+.mvn/wrapper/maven-wrapper.jar
+
+# --- Node / frontend ---
+node_modules/
+frontend/dist/
+frontend/.vite/
+artifacts/
+
+# --- Local env ---
+*.local
+frontend/.env
+
+# --- IDE / OS ---
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+*.log
