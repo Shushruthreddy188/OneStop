@@ -116,6 +116,27 @@ jobs:
             fi
           done
 
+      - name: Load deterministic E2E fixtures
+        run: |
+          docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U onestop -d catalog_db \
+            < infrastructure/database/seed/e2e_catalog_seed.sql
+          docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U onestop -d inventory_db \
+            < infrastructure/database/seed/e2e_inventory_seed.sql
+
+      - name: Verify business data is ready
+        run: |
+          for attempt in {1..30}; do
+            count=$(curl --fail --silent \
+              'http://127.0.0.1:8080/api/products?page=0&size=1' \
+              | jq '.content | length') || count=0
+            if [[ "$count" -gt 0 ]]; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Catalog fixture was not visible through the gateway"
+          exit 1
+
       - name: Run customer journey
         working-directory: frontend
         run: npm run test:e2e
