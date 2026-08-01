@@ -6,7 +6,10 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
+
 public interface NotificationLogRepository extends JpaRepository<NotificationLog, Long> {
+    List<NotificationLog> findByOrderIdOrderByIdAsc(Long orderId);
     @Modifying
     @Query(value = """
             INSERT INTO notification_log (order_id, channel, recipient, subject, body, status)

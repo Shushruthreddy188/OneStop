@@ -68,6 +68,7 @@ Each service exposes `/actuator/health` and `/swagger-ui.html` on its own port.
 cd frontend
 npm ci
 npm run build
+npm run test:e2e  # requires the Docker backend stack
 ```
 
 The backend suite includes a PostgreSQL Testcontainers concurrency test for customer-scoped checkout
@@ -75,10 +76,11 @@ idempotency. A full Docker smoke test has also verified order confirmation, stoc
 idempotency behavior, Kafka delivery, and notification persistence.
 
 GitHub Actions runs `clean verify` for every backend module and performs a locked frontend install,
-lint, and production build for pull requests and changes to the primary branch.
+lint, and production build for pull requests and changes to the primary branch. After those gates pass,
+Playwright starts the Docker Compose stack and verifies the complete customer journey in Chromium.
 
 ## Next milestone
 
-The MVP feature path, durable notification pipeline, and CI release gate are complete. The remaining
-release hardening is a repeatable end-to-end test, distributed tracing and alerts, dependency/security
-remediation, contract tests, secrets management, and deployment to a shared environment.
+The MVP feature path, durable notification pipeline, CI release gate, and repeatable browser-level
+customer journey are complete. Remaining release hardening includes distributed tracing and alerts,
+dependency/security remediation, contract tests, secrets management, and shared deployment.

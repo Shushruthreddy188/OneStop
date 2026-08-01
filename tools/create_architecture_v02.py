@@ -88,7 +88,7 @@ table(["Area", "Status", "Evidence"], [
     ("Retry safety", "Complete", "Customer-scoped idempotency key and PostgreSQL unique constraint"),
     ("Interrupted checkout", "Complete", "Durable STOCK_RESERVED handoff plus reconciliation worker"),
     ("Notification delivery", "Complete for MVP", "Transactional outbox, Kafka retry, idempotent consumer"),
-    ("Production readiness", "In progress", "CI complete; tracing, alerts, secrets and contract tests remain"),
+    ("Production readiness", "In progress", "CI and browser E2E complete; operations and deployment remain"),
 ])
 doc.add_heading("What changed since v0.1", level=2)
 for x in [
@@ -209,6 +209,7 @@ doc.add_heading("7. Verification and delivery status", level=1)
 table(["Verification", "Result"], [
     ("Backend Maven reactor", "Passed"),
     ("GitHub Actions release gate", "Backend clean verify plus frontend npm ci, lint and build"),
+    ("Browser customer journey", "Playwright verifies register through cancellation and stock restoration"),
     ("Order-service unit/integration tests", "7 passed; PostgreSQL Flyway V1–V4 applied"),
     ("Concurrent idempotency", "Verified with Testcontainers/PostgreSQL unique constraint"),
     ("Frontend production build", "Passed"),
@@ -226,12 +227,12 @@ table(["Milestone", "Status", "Outcome"], [
     ("4 — Inventory", "Complete", "Atomic stock reservation lifecycle"),
     ("5 — Orders", "Complete", "Idempotent checkout, history and cancellation"),
     ("6 — Frontend journey", "Complete", "Integrated React customer experience"),
-    ("7 — Release hardening", "In progress", "Outbox, consumer idempotency and CI complete"),
+    ("7 — Release hardening", "In progress", "Outbox, idempotency, CI and browser E2E complete"),
 ])
 
 doc.add_heading("8. Next actions", level=1)
 table(["Priority", "Action", "Exit criterion"], [
-    ("P0", "Automate the full customer journey", "Register-to-cancellation smoke test runs repeatably"),
+    ("P0", "Deploy a shared staging environment", "Browser journey passes outside local Docker"),
     ("P1", "Add tracing, metrics and alerts", "Checkout correlation visible across gateway, order, inventory and Kafka"),
     ("P1", "Add contract tests", "HTTP and event producer/consumer compatibility enforced"),
     ("P1", "Externalize secrets and environment config", "No deployment credentials stored in source"),
