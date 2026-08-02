@@ -1,0 +1,16 @@
+[Unit]
+Description=OneStop encrypted PostgreSQL backup to S3
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/OneStop
+ExecStart=/home/ubuntu/OneStop/tools/backup-production.sh
+Nice=10
+
+[Install]
+WantedBy=multi-user.target
