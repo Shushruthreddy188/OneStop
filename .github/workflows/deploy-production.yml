@@ -1,0 +1,77 @@
+name: Deploy production
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type deploy to confirm the production deployment'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: onestop-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy through AWS Systems Manager
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 60
+
+    steps:
+      - name: Validate confirmation
+        env:
+          CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          if [[ "$CONFIRMATION" != "deploy" ]]; then
+            echo "Deployment confirmation must be exactly: deploy" >&2
+            exit 1
+          fi
+
+      - name: Configure temporary AWS credentials
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: arn:aws:iam::382764426258:role/OneStopGitHubDeployRole
+          aws-region: us-east-1
+
+      - name: Run deployment on EC2
+        env:
+          INSTANCE_ID: i-0a17d5343ad6841f3
+        run: |
+          command_id="$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name AWS-RunShellScript \
+            --comment "GitHub Actions OneStop production deployment" \
+            --timeout-seconds 3600 \
+            --parameters 'commands=["sudo -u ubuntu /home/ubuntu/OneStop/tools/deploy-production.sh"]' \
+            --query 'Command.CommandId' \
+            --output text)"
+
+          echo "SSM command: $command_id"
+          status="Pending"
+          for attempt in $(seq 1 180); do
+            status="$(aws ssm get-command-invocation \
+              --command-id "$command_id" \
+              --instance-id "$INSTANCE_ID" \
+              --query 'Status' --output text 2>/dev/null || echo Pending)"
+            echo "Deployment status: $status ($attempt/180)"
+            case "$status" in
+              Success|Cancelled|TimedOut|Failed|Cancelling) break ;;
+            esac
+            sleep 10
+          done
+
+          aws ssm get-command-invocation \
+            --command-id "$command_id" \
+            --instance-id "$INSTANCE_ID" \
+            --query '{Status:Status,Output:StandardOutputContent,Errors:StandardErrorContent}'
+
+          if [[ "$status" != "Success" ]]; then
+            echo "Production deployment failed with status: $status" >&2
+            exit 1
+          fi
