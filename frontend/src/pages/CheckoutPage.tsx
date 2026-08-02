@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from 'react-router';
@@ -8,6 +8,7 @@ import { validateCoupon, type CouponValidation } from '../api/coupons';
 import { useCart, CART_QUERY_KEY } from '../cart/useCart';
 import { formatMoney } from '../lib/format';
 import { apiErrorMessage } from '../lib/apiError';
+import { track } from '../lib/activity';
 import '../pages/AuthForm.css';
 
 type FormValues = Omit<CheckoutRequest, 'idempotencyKey'>;
@@ -58,6 +59,15 @@ export default function CheckoutPage() {
       });
     }
   }, [addressesQuery.data, reset]);
+
+  // Fire a single checkout-started activity event once the cart is loaded.
+  const startedRef = useRef(false);
+  useEffect(() => {
+    if (!startedRef.current && cart && cart.items.length > 0) {
+      startedRef.current = true;
+      track('CHECKOUT_STARTED');
+    }
+  }, [cart]);
 
   const mutation = useMutation({
     mutationFn: (values: FormValues) =>

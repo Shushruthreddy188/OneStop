@@ -33,6 +33,13 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
+        <!-- Elasticsearch Java API client. Boot's BOM manages the version and
+             autoconfigures the ElasticsearchClient bean from spring.elasticsearch.uris. -->
+        <dependency>
+            <groupId>co.elastic.clients</groupId>
+            <artifactId>elasticsearch-java</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>

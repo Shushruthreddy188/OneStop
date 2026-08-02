@@ -30,6 +30,26 @@ public final class SearchDtos {
             boolean last) {
     }
 
+    /** A single facet value and how many results carry it. */
+    public record Facet(String value, long count) {
+    }
+
+    /**
+     * Search results plus brand/category facet counts. Field names mirror
+     * {@link PagedResponse} so existing clients keep working; {@code brands} and
+     * {@code categories} are additive (empty from the Postgres fallback path).
+     */
+    public record FacetedSearchResponse(
+            List<SearchResultDto> content,
+            int page,
+            int size,
+            long totalElements,
+            int totalPages,
+            boolean last,
+            List<Facet> brands,
+            List<Facet> categories) {
+    }
+
     public record ReindexResult(long indexed) {
     }
 }

@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { fetchCategories, fetchProducts } from '../api/catalog';
+import { fetchSearch, type SearchFacet } from '../api/search';
 import { formatMoney } from '../lib/format';
 import AddToCartButton from '../cart/AddToCartButton';
 import WishlistButton from '../wishlist/WishlistButton';
@@ -10,6 +11,17 @@ import './ProductsPage.css';
 
 const PAGE_SIZE = 20;
 
+/** Normalized card shape shared by the catalog-browse and ES-search paths. */
+interface Item {
+  id: number;
+  name: string;
+  brandName: string | null;
+  categoryName: string | null;
+  packageSize: string | null;
+  sellingPrice: number;
+  mrp: number | null;
+}
+
 export default function ProductsPage() {
   // Filter/pagination state lives in the URL so it survives navigation:
   // going into a product and pressing Back restores the exact page + filters.
@@ -17,9 +29,15 @@ export default function ProductsPage() {
   const page = Math.max(0, Number(searchParams.get('page') ?? '0') || 0);
   const category = searchParams.get('category') ? Number(searchParams.get('category')) : null;
   const q = searchParams.get('q') ?? '';
+  // Search-mode facet selections (brand/category names, distinct from the
+  // catalog category id used when browsing).
+  const brandFacet = searchParams.get('b');
+  const catFacet = searchParams.get('c');
   const [searchInput, setSearchInput] = useState(q);
 
-  function updateParams(next: { page?: number | null; category?: number | null; q?: string | null }) {
+  const inSearchMode = q.trim().length > 0;
+
+  function updateParams(next: Record<string, number | string | null | undefined>) {
     const params = new URLSearchParams(searchParams);
     for (const [key, value] of Object.entries(next)) {
       if (value === null || value === undefined || value === '' || value === 0) {
@@ -39,67 +57,157 @@ export default function ProductsPage() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Browse mode: catalog listing. Search mode: Elasticsearch-backed results.
   const productsQuery = useQuery({
-    queryKey: ['products', { page, category, q }],
-    queryFn: () => fetchProducts({ page, size: PAGE_SIZE, category, q }),
+    queryKey: ['products', { page, category }],
+    queryFn: () => fetchProducts({ page, size: PAGE_SIZE, category }),
+    enabled: !inSearchMode,
+    placeholderData: keepPreviousData,
+  });
+
+  const searchQuery = useQuery({
+    queryKey: ['search', { q, brandFacet, catFacet, page }],
+    queryFn: () => fetchSearch({ q, brand: brandFacet, category: catFacet, page, size: PAGE_SIZE }),
+    enabled: inSearchMode,
     placeholderData: keepPreviousData,
   });
 
   function submitSearch(e: FormEvent) {
     e.preventDefault();
-    updateParams({ q: searchInput, page: null });
+    // New query: reset page and any previously chosen facets.
+    updateParams({ q: searchInput, page: null, b: null, c: null });
   }
 
-  const data = productsQuery.data;
+  function toggleFacet(key: 'b' | 'c', value: string) {
+    const current = searchParams.get(key);
+    updateParams({ [key]: current === value ? null : value, page: null });
+  }
+
+  const activeQuery = inSearchMode ? searchQuery : productsQuery;
+
+  // Normalize whichever source is active into a single list + paging shape.
+  let items: Item[] = [];
+  let totalElements = 0;
+  let totalPages = 0;
+  let last = true;
+  let brands: SearchFacet[] = [];
+  let categories: SearchFacet[] = [];
+
+  if (inSearchMode && searchQuery.data) {
+    const d = searchQuery.data;
+    items = d.content.map((s) => ({
+      id: s.productId, name: s.name, brandName: s.brandName,
+      categoryName: s.categoryName, packageSize: s.packageSize,
+      sellingPrice: s.sellingPrice, mrp: s.mrp,
+    }));
+    totalElements = d.totalElements;
+    totalPages = d.totalPages;
+    last = d.last;
+    brands = d.brands;
+    categories = d.categories;
+  } else if (!inSearchMode && productsQuery.data) {
+    const d = productsQuery.data;
+    items = d.content.map((p) => ({
+      id: p.id, name: p.name, brandName: p.brandName,
+      categoryName: p.categoryName, packageSize: p.packageSize,
+      sellingPrice: p.sellingPrice, mrp: p.mrp,
+    }));
+    totalElements = d.totalElements;
+    totalPages = d.totalPages;
+    last = d.last;
+  }
+
+  const hasFacets = inSearchMode && (brands.length > 0 || categories.length > 0);
 
   return (
     <section>
       <div className="products-header">
-        <h1>Products</h1>
-        {data && (
-          <span className="muted">
-            {data.totalElements.toLocaleString('en-IN')} items
-          </span>
+        <h1>{inSearchMode ? `Results for “${q}”` : 'Products'}</h1>
+        {activeQuery.data && (
+          <span className="muted">{totalElements.toLocaleString('en-IN')} items</span>
         )}
       </div>
 
       <div className="products-filters">
         <SearchBox value={searchInput} onChange={setSearchInput} onSubmit={submitSearch} />
-        <select
-          value={category ?? ''}
-          onChange={(e) =>
-            updateParams({ category: e.target.value ? Number(e.target.value) : null, page: null })
-          }
-        >
-          <option value="">All categories</option>
-          {categoriesQuery.data?.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.parentName ? `${c.parentName} › ${c.name}` : c.name}
-            </option>
-          ))}
-        </select>
-        <button type="button" onClick={() => updateParams({ q: searchInput, page: null })}>Search</button>
+        {!inSearchMode && (
+          <select
+            value={category ?? ''}
+            onChange={(e) =>
+              updateParams({ category: e.target.value ? Number(e.target.value) : null, page: null })
+            }
+          >
+            <option value="">All categories</option>
+            {categoriesQuery.data?.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.parentName ? `${c.parentName} › ${c.name}` : c.name}
+              </option>
+            ))}
+          </select>
+        )}
+        <button type="button" onClick={() => updateParams({ q: searchInput, page: null, b: null, c: null })}>
+          Search
+        </button>
+        {inSearchMode && (
+          <button type="button" className="link-btn" onClick={() => { setSearchInput(''); updateParams({ q: null, b: null, c: null, page: null }); }}>
+            Clear search
+          </button>
+        )}
       </div>
 
-      {productsQuery.isLoading && <p>Loading…</p>}
-      {productsQuery.isError && (
+      {hasFacets && (
+        <div className="facets">
+          {brands.length > 0 && (
+            <div className="facet-group">
+              <span className="facet-label">Brand</span>
+              {brands.slice(0, 12).map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  className={`facet-pill ${brandFacet === f.value ? 'active' : ''}`}
+                  onClick={() => toggleFacet('b', f.value)}
+                >
+                  {f.value} <span className="facet-count">{f.count}</span>
+                </button>
+              ))}
+            </div>
+          )}
+          {categories.length > 0 && (
+            <div className="facet-group">
+              <span className="facet-label">Category</span>
+              {categories.slice(0, 12).map((f) => (
+                <button
+                  key={f.value}
+                  type="button"
+                  className={`facet-pill ${catFacet === f.value ? 'active' : ''}`}
+                  onClick={() => toggleFacet('c', f.value)}
+                >
+                  {f.value} <span className="facet-count">{f.count}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeQuery.isLoading && <p>Loading…</p>}
+      {activeQuery.isError && (
         <div>
           <p className="error">
-            Could not load products: {(productsQuery.error as Error).message}. Is the
-            backend running?
+            Could not load products: {(activeQuery.error as Error).message}. Is the backend running?
           </p>
-          <button type="button" onClick={() => productsQuery.refetch()}>
+          <button type="button" onClick={() => activeQuery.refetch()}>
             Retry
           </button>
         </div>
       )}
 
-      {data && data.content.length === 0 && <p>No products match your filters.</p>}
+      {activeQuery.data && items.length === 0 && <p>No products match your filters.</p>}
 
-      {data && data.content.length > 0 && (
+      {items.length > 0 && (
         <>
           <ul className="product-grid">
-            {data.content.map((p) => {
+            {items.map((p) => {
               const discounted = p.mrp != null && p.mrp > p.sellingPrice;
               const savePct = discounted && p.mrp
                 ? Math.round(((p.mrp - p.sellingPrice) / p.mrp) * 100)
@@ -131,18 +239,18 @@ export default function ProductsPage() {
           <div className="pager">
             <button
               type="button"
-              disabled={page === 0 || productsQuery.isFetching}
+              disabled={page === 0 || activeQuery.isFetching}
               onClick={() => updateParams({ page: page - 1 })}
             >
               ‹ Prev
             </button>
             <span className="muted">
-              Page {data.page + 1} of {data.totalPages.toLocaleString('en-IN')}
-              {productsQuery.isFetching && ' · updating…'}
+              Page {page + 1} of {totalPages.toLocaleString('en-IN')}
+              {activeQuery.isFetching && ' · updating…'}
             </span>
             <button
               type="button"
-              disabled={data.last || productsQuery.isFetching}
+              disabled={last || activeQuery.isFetching}
               onClick={() => updateParams({ page: page + 1 })}
             >
               Next ›

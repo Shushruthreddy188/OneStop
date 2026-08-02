@@ -1,5 +1,7 @@
 import { Link } from 'react-router';
 import { useAuth } from '../auth/AuthContext';
+import RecommendationRow from '../components/RecommendationRow';
+import { fetchForYou, fetchTrending } from '../api/recommendations';
 import './HomePage.css';
 
 export default function HomePage() {
@@ -19,6 +21,20 @@ export default function HomePage() {
           {!isAuthenticated && <Link to="/register" className="cta-ghost">Create an account</Link>}
         </div>
       </section>
+
+      {isAuthenticated && (
+        <RecommendationRow
+          queryKey={['recs', 'for-you']}
+          queryFn={() => fetchForYou(10)}
+          title="Recommended for you"
+        />
+      )}
+
+      <RecommendationRow
+        queryKey={['recs', 'trending']}
+        queryFn={() => fetchTrending(10)}
+        title="Trending now"
+      />
 
       <section className="feature-row">
         <div className="feature card">

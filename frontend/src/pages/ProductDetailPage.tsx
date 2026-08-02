@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
+import { track } from '../lib/activity';
 import { fetchProduct } from '../api/catalog';
 import { fetchAvailability } from '../api/inventory';
 import { fetchReviewSummary } from '../api/reviews';
@@ -40,6 +42,11 @@ export default function ProductDetailPage() {
     queryFn: () => fetchReviewSummary(productId),
     enabled: Number.isFinite(productId),
   });
+
+  // Capture a product-view activity event once the product loads.
+  useEffect(() => {
+    if (Number.isFinite(productId)) track('PRODUCT_VIEWED', { productId });
+  }, [productId]);
 
   if (isLoading) return <p>Loading…</p>;
   if (isError) {

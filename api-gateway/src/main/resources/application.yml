@@ -69,6 +69,14 @@ spring:
           uri: ${ADMIN_URI:http://localhost:8094}
           predicates:
             - Path=/api/admin/**
+        - id: activity
+          uri: ${ACTIVITY_URI:http://localhost:8095}
+          predicates:
+            - Path=/api/activity/**
+        - id: recommendations
+          uri: ${RECOMMENDATION_URI:http://localhost:8096}
+          predicates:
+            - Path=/api/recommendations/**
         - id: cart
           uri: ${CART_URI:http://localhost:8083}
           predicates:

@@ -44,6 +44,8 @@
         <module>delivery-service</module>
         <module>address-service</module>
         <module>admin-service</module>
+        <module>activity-service</module>
+        <module>recommendation-service</module>
     </modules>
 
     <properties>

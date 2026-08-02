@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { addItem } from '../api/cart';
 import { useAuth } from '../auth/AuthContext';
+import { track } from '../lib/activity';
 import { CART_QUERY_KEY } from './useCart';
 
 interface Props {
@@ -21,6 +22,7 @@ export default function AddToCartButton({ productId, quantity = 1, label = 'Add 
     mutationFn: () => addItem(productId, quantity),
     onSuccess: (cart) => {
       queryClient.setQueryData(CART_QUERY_KEY, cart);
+      track('CART_ADDED', { productId });
     },
   });
 

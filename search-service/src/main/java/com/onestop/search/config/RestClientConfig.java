@@ -24,4 +24,18 @@ public class RestClientConfig {
                 .requestFactory(factory)
                 .build();
     }
+
+    @Bean
+    public RestClient recommendationRestClient(
+            @Value("${onestop.clients.recommendation.base-url:http://localhost:8096}") String baseUrl) {
+
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(2));
+        factory.setReadTimeout(Duration.ofSeconds(5));
+
+        return RestClient.builder()
+                .baseUrl(baseUrl)
+                .requestFactory(factory)
+                .build();
+    }
 }

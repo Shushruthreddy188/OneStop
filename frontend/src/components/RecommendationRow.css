@@ -1,0 +1,93 @@
+.rec-row {
+  margin: 2rem 0;
+}
+
+.rec-row-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.rec-row-head h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.rec-badge {
+  font-size: 0.72rem;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 0.15rem 0.55rem;
+  border-radius: var(--radius-pill);
+}
+
+/* Horizontal strip that scrolls on overflow; never pushes the page wide. */
+.rec-strip {
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0.25rem 0.75rem;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(190px, 1fr);
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+}
+
+.rec-card {
+  scroll-snap-align: start;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.rec-card:hover {
+  box-shadow: var(--shadow-md);
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border));
+}
+
+.rec-name {
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.rec-name:hover {
+  color: var(--primary);
+}
+
+.rec-price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+
+.rec-price-row .price {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.rec-price-row .mrp {
+  color: var(--muted);
+  text-decoration: line-through;
+  font-size: 0.85rem;
+}
+
+.rec-reason {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-style: italic;
+}

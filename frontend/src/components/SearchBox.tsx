@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { fetchSuggestions } from '../api/search';
+import { track } from '../lib/activity';
 import './SearchBox.css';
 
 interface Props {
@@ -44,6 +45,7 @@ export default function SearchBox({ value, onChange, onSubmit }: Props) {
       <form
         onSubmit={(e) => {
           setOpen(false);
+          if (value.trim()) track('SEARCH_PERFORMED', { query: value.trim() });
           onSubmit(e);
         }}
       >

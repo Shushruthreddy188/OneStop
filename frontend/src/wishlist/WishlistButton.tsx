@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router';
 import { addToWishlist, removeFromWishlist, type Wishlist } from '../api/wishlist';
 import { useAuth } from '../auth/AuthContext';
+import { track } from '../lib/activity';
 import { useWishlist, WISHLIST_QUERY_KEY } from './useWishlist';
 import './WishlistButton.css';
 
@@ -15,7 +16,10 @@ export default function WishlistButton({ productId }: { productId: number }) {
 
   const mutation = useMutation({
     mutationFn: () => (saved ? removeFromWishlist(productId) : addToWishlist(productId)),
-    onSuccess: (wishlist: Wishlist) => queryClient.setQueryData(WISHLIST_QUERY_KEY, wishlist),
+    onSuccess: (wishlist: Wishlist) => {
+      queryClient.setQueryData(WISHLIST_QUERY_KEY, wishlist);
+      if (!saved) track('WISHLIST_ADDED', { productId });
+    },
   });
 
   function handleClick() {

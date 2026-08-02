@@ -1,9 +1,8 @@
 package com.onestop.search.web;
 
 import com.onestop.search.service.SearchService;
-import com.onestop.search.web.dto.SearchDtos.PagedResponse;
+import com.onestop.search.web.dto.SearchDtos.FacetedSearchResponse;
 import com.onestop.search.web.dto.SearchDtos.ReindexResult;
-import com.onestop.search.web.dto.SearchDtos.SearchResultDto;
 import com.onestop.search.web.dto.SearchDtos.SuggestionDto;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -31,9 +30,9 @@ public class SearchController {
         return searchService.suggest(q, Math.min(Math.max(limit, 1), 20));
     }
 
-    /** GET /api/search?q=&category=&brand=&page=&size= — full search results. */
+    /** GET /api/search?q=&category=&brand=&page=&size= — full search results with facets. */
     @GetMapping("/api/search")
-    public PagedResponse<SearchResultDto> search(
+    public FacetedSearchResponse search(
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String brand,
