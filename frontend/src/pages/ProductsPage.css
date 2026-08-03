@@ -123,3 +123,68 @@
   gap: 1rem;
   margin: 1.75rem 0 0;
 }
+
+/* Facet pills (search mode) */
+.facets {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0 0 1.25rem;
+}
+
+.facet-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.facet-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  margin-right: 0.25rem;
+  min-width: 62px;
+}
+
+.facet-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  font-size: 0.82rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.facet-pill:hover {
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+}
+
+.facet-pill.active {
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.facet-count {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.facet-pill.active .facet-count {
+  color: inherit;
+}
+
+.link-btn {
+  background: none !important;
+  border: none !important;
+  color: var(--primary);
+  cursor: pointer;
+  padding: 0 0.25rem !important;
+  text-decoration: underline;
+}
